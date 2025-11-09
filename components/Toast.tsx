@@ -24,7 +24,7 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
   const Icon = isSuccess ? CheckCircleIcon : XCircleIcon;
 
   return (
-    <div className={`fixed bottom-5 right-5 md:bottom-10 md:right-10 z-50 flex items-center p-4 rounded-lg text-white shadow-lg ${bgColor} animate-fade-in-up`}>
+    <div className={`fixed top-5 right-5 md:top-10 md:right-10 z-50 flex items-center p-4 rounded-lg text-white shadow-lg ${bgColor} animate-fade-in-up`}>
       <Icon className="w-6 h-6 mr-3" />
       <span>{message}</span>
     </div>
