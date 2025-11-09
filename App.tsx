@@ -5,6 +5,7 @@ import ParticipantsTab from './components/ParticipantsTab';
 import FinancialTab from './components/FinancialTab';
 import Modal from './components/Modal';
 import Toast from './components/Toast';
+import Footer from './components/Footer';
 import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon } from './components/icons';
 
 type ActiveTab = 'participants' | 'financial';
@@ -241,10 +242,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen text-gray-800 dark:text-gray-200">
+    <div className="min-h-screen text-gray-800 dark:text-gray-200 flex flex-col">
       <Header isAdmin={isAdmin} onAdminClick={handleAdminClick} />
 
-      <main className="container mx-auto p-4 sm:p-6">
+      <main className="container mx-auto p-4 sm:p-6 flex-grow">
         <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full sm:w-auto sm:flex-1">
             <label htmlFor="pool-select" className="sr-only">Selecionar Bolão</label>
@@ -372,6 +373,7 @@ const App: React.FC = () => {
       </Modal>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <Footer />
     </div>
   );
 };
