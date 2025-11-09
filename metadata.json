@@ -1,0 +1,5 @@
+{
+  "name": "Sistema de Bolão",
+  "description": "Um sistema web simples para gerenciar participantes e finanças de um bolão, com modo administrador para gerenciamento de dados.",
+  "requestFramePermissions": []
+}
