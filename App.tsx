@@ -3,12 +3,13 @@ import { Participant, FinancialRecord, Pool } from './types';
 import Header from './components/Header';
 import ParticipantsTab from './components/ParticipantsTab';
 import FinancialTab from './components/FinancialTab';
+import FaqTab from './components/FaqTab';
 import Modal from './components/Modal';
 import Toast from './components/Toast';
 import Footer from './components/Footer';
-import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon } from './components/icons';
+import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon, QuestionMarkCircleIcon } from './components/icons';
 
-type ActiveTab = 'participants' | 'financial';
+type ActiveTab = 'participants' | 'financial' | 'faq';
 
 const ADMIN_PASSWORD = 'ricardo123';
 const NPOINT_URL = 'https://api.npoint.io/52ef8aa3c656668a39e9';
@@ -49,6 +50,8 @@ const App: React.FC = () => {
         setPools(loadedPools);
         if (loadedPools.length > 0) {
           setSelectedPoolId(loadedPools[0].id);
+        } else {
+          setActiveTab('faq');
         }
       } catch (e) {
         console.error("Failed to fetch data from npoint.io", e);
@@ -197,6 +200,7 @@ const App: React.FC = () => {
     setShowCreatePoolModal(false);
     setNewPoolName('');
     showToast('Novo bolão criado com sucesso!', 'success');
+    setActiveTab('participants');
   };
 
   const valorArrecadado = useMemo(() => {
@@ -207,6 +211,9 @@ const App: React.FC = () => {
   }, [selectedPool]);
 
   const renderContent = () => {
+    if (activeTab === 'faq') {
+      return <FaqTab />;
+    }
     if (loading) return <div className="text-center p-10">Carregando dados...</div>;
     if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
     if (pools.length === 0) {
@@ -283,26 +290,48 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {pools.length > 0 && (
-          <div className="mb-6">
+        <div className="mb-6">
             <div className="flex border-b border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setActiveTab('participants')}
-                className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors flex justify-center items-center space-x-2 ${activeTab === 'participants' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                disabled={pools.length === 0}
+                className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors flex justify-center items-center space-x-2 ${
+                  activeTab === 'participants' 
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400' 
+                  : pools.length === 0 
+                  ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
               >
                 <UserCircleIcon className="w-5 h-5"/>
                 <span>Participantes</span>
               </button>
               <button
                 onClick={() => setActiveTab('financial')}
-                className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors flex justify-center items-center space-x-2 ${activeTab === 'financial' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                disabled={pools.length === 0}
+                className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors flex justify-center items-center space-x-2 ${
+                  activeTab === 'financial' 
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400' 
+                  : pools.length === 0 
+                  ? 'border-transparent text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
               >
                 <ChartBarIcon className="w-5 h-5"/>
                 <span>Financeiro</span>
               </button>
+              <button
+                onClick={() => setActiveTab('faq')}
+                className={`flex-1 py-2 text-center font-medium border-b-2 transition-colors flex justify-center items-center space-x-2 ${
+                  activeTab === 'faq' 
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              >
+                <QuestionMarkCircleIcon className="w-5 h-5"/>
+                <span>FAQ</span>
+              </button>
             </div>
           </div>
-        )}
 
         {renderContent()}
       </main>
