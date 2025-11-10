@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Participant } from '../types';
-import { TrashIcon, PencilIcon, UserCircleIcon, PhoneIcon, HashtagIcon, TagIcon, CurrencyDollarIcon } from './icons';
+import { TrashIcon, PencilIcon, UserCircleIcon, PhoneIcon, HashtagIcon, TagIcon, CurrencyDollarIcon, SearchIcon } from './icons';
 
 interface ParticipantsTabProps {
   participants: Participant[];
@@ -49,14 +49,24 @@ const ParticipantForm: React.FC<{
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    // Apply mask for (XX) X XXXX-XXXX
-    value = value.replace(/\D/g, '');
-    value = value.substring(0, 11);
-    value = value.replace(/^(\d{2})/, '($1) ');
-    value = value.replace(/^\((\d{2})\)\s(\d{1})/, '($1) $2 ');
-    value = value.replace(/ (\d{4})(\d)/, ' $1-$2');
-    setPhone(value);
+    const digits = e.target.value.replace(/\D/g, '').substring(0, 11);
+    if (digits.length === 0) {
+        setPhone('');
+        return;
+    }
+    if (digits.length <= 2) {
+        setPhone(`(${digits}`);
+        return;
+    }
+    if (digits.length <= 3) {
+        setPhone(`(${digits.substring(0, 2)}) ${digits.substring(2)}`);
+        return;
+    }
+    if (digits.length <= 7) {
+        setPhone(`(${digits.substring(0, 2)}) ${digits.substring(2, 3)} ${digits.substring(3)}`);
+        return;
+    }
+    setPhone(`(${digits.substring(0, 2)}) ${digits.substring(2, 3)} ${digits.substring(3, 7)}-${digits.substring(7)}`);
   };
 
   const commonInputClasses = "block w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500";
@@ -131,9 +141,44 @@ const formatDisplayPhone = (phone: string): string => {
 };
 
 const ParticipantsTab: React.FC<ParticipantsTabProps> = ({ participants, isAdmin, onSave, onDelete, editingParticipant, setEditingParticipant, onToggleStatus }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'Todos' | 'Pago' | 'Pendente'>('Todos');
+
     const totalQuotas = participants.reduce((sum, p) => sum + p.quotas, 0);
     const paidQuotas = participants.filter(p => p.status === 'Pago').reduce((sum, p) => sum + p.quotas, 0);
     const pendingQuotas = totalQuotas - paidQuotas;
+
+    const filteredParticipants = useMemo(() => {
+        // Helper function to remove accents from strings for comparison
+        const normalizeString = (str: string) => 
+            str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        return participants
+        .filter(p => {
+            if (statusFilter === 'Todos') return true;
+            return p.status === statusFilter;
+        })
+        .filter(p => {
+            const term = searchTerm.toLowerCase();
+            if (!term) return true;
+
+            // Name search part (accent-insensitive)
+            const normalizedName = normalizeString(p.name.toLowerCase());
+            const normalizedTerm = normalizeString(term);
+            const nameMatch = normalizedName.includes(normalizedTerm);
+
+            // Phone search part
+            const termDigits = term.replace(/\D/g, '');
+            let phoneMatch = false;
+            if (termDigits) { // Only search phone if search term has digits
+                const phoneDigits = (p.phone || '').replace(/\D/g, '');
+                phoneMatch = phoneDigits.includes(termDigits);
+            }
+            
+            return nameMatch || phoneMatch;
+        });
+    }, [participants, searchTerm, statusFilter]);
+
 
     return (
     <div className="space-y-6">
@@ -160,11 +205,45 @@ const ParticipantsTab: React.FC<ParticipantsTabProps> = ({ participants, isAdmin
         />
       )}
 
+      {/* Search and Filter */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+          <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-grow">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <SearchIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                      type="text"
+                      placeholder="Buscar por nome ou telefone..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="block w-full pl-10 p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500"
+                  />
+              </div>
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtro:</span>
+                  {(['Todos', 'Pago', 'Pendente'] as const).map(status => (
+                      <button
+                          key={status}
+                          onClick={() => setStatusFilter(status)}
+                          className={`px-3 py-1 text-sm font-semibold rounded-full transition-colors ${
+                              statusFilter === status
+                              ? 'bg-primary-500 text-white'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                          }`}
+                      >
+                          {status}
+                      </button>
+                  ))}
+              </div>
+          </div>
+      </div>
+
       <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Lista de Participantes ({participants.length})</h3>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Lista de Participantes ({filteredParticipants.length})</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 hidden sm:table-header-group">
               <tr>
                 <th scope="col" className="px-4 py-3">Nome</th>
                 <th scope="col" className="px-4 py-3">Telefone</th>
@@ -174,34 +253,49 @@ const ParticipantsTab: React.FC<ParticipantsTabProps> = ({ participants, isAdmin
               </tr>
             </thead>
             <tbody>
-              {participants.sort((a,b) => a.name.localeCompare(b.name)).map(p => (
-                <tr key={p.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap">{p.name}</td>
-                  <td className="px-4 py-3">{formatDisplayPhone(p.phone)}</td>
-                  <td className="px-4 py-3 text-center">{p.quotas}</td>
-                  <td className="px-4 py-3">
+              {filteredParticipants.sort((a,b) => a.name.localeCompare(b.name)).map(p => (
+                <tr key={p.id} className="block mb-4 p-2 border rounded-lg shadow sm:table-row sm:shadow-none sm:p-0 sm:m-0 sm:border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                  <td className="p-2 font-medium text-gray-900 dark:text-white block sm:table-cell sm:px-4 sm:py-3 text-right sm:text-left whitespace-nowrap flow-root">
+                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 sm:hidden">Nome</span>
+                    {p.name}
+                  </td>
+                  <td className="p-2 block sm:table-cell sm:px-4 sm:py-3 text-right sm:text-left flow-root">
+                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 sm:hidden">Telefone</span>
+                    {formatDisplayPhone(p.phone)}
+                  </td>
+                  <td className="p-2 block sm:table-cell sm:px-4 sm:py-3 text-right sm:text-center flow-root">
+                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 sm:hidden">Cotas</span>
+                    {p.quotas}
+                  </td>
+                  <td className="p-2 block sm:table-cell sm:px-4 sm:py-3 text-right sm:text-left flow-root">
+                    <span className="float-left font-semibold text-gray-500 dark:text-gray-400 sm:hidden">Status</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${p.status === 'Pago' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'}`}>
                       {p.status}
                     </span>
                   </td>
                   {isAdmin && (
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <button onClick={() => setEditingParticipant(p)} className="p-1 text-blue-500 hover:text-blue-700"><PencilIcon className="w-5 h-5"/></button>
-                      <button 
-                        onClick={() => onToggleStatus(p.id)} 
-                        className={`p-1 ${p.status === 'Pendente' ? 'text-green-500 hover:text-green-700' : 'text-yellow-500 hover:text-yellow-700'}`}
-                        title={p.status === 'Pendente' ? 'Marcar como Pago' : 'Marcar como Pendente'}
-                      >
-                        <CurrencyDollarIcon className="w-5 h-5"/>
-                      </button>
-                      <button onClick={() => onDelete(p.id)} className="p-1 text-red-500 hover:text-red-700"><TrashIcon className="w-5 h-5"/></button>
+                    <td className="p-2 block sm:table-cell sm:px-4 sm:py-3 text-right flow-root">
+                       <span className="float-left font-semibold text-gray-500 dark:text-gray-400 sm:hidden">Ações</span>
+                      <div className="inline-block space-x-2">
+                        <button onClick={() => setEditingParticipant(p)} className="p-1 text-blue-500 hover:text-blue-700"><PencilIcon className="w-5 h-5"/></button>
+                        <button 
+                          onClick={() => onToggleStatus(p.id)} 
+                          className={`p-1 ${p.status === 'Pendente' ? 'text-green-500 hover:text-green-700' : 'text-yellow-500 hover:text-yellow-700'}`}
+                          title={p.status === 'Pendente' ? 'Marcar como Pago' : 'Marcar como Pendente'}
+                        >
+                          <CurrencyDollarIcon className="w-5 h-5"/>
+                        </button>
+                        <button onClick={() => onDelete(p.id)} className="p-1 text-red-500 hover:text-red-700"><TrashIcon className="w-5 h-5"/></button>
+                      </div>
                     </td>
                   )}
                 </tr>
               ))}
-              {participants.length === 0 && (
-                  <tr>
-                      <td colSpan={isAdmin ? 5 : 4} className="text-center py-4">Nenhum participante cadastrado.</td>
+              {filteredParticipants.length === 0 && (
+                  <tr className="block sm:table-row">
+                      <td colSpan={isAdmin ? 5 : 4} className="block sm:table-cell text-center py-4">
+                        {participants.length > 0 ? 'Nenhum participante encontrado com os filtros atuais.' : 'Nenhum participante cadastrado.'}
+                      </td>
                   </tr>
               )}
             </tbody>
