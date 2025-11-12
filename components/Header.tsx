@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ isAdmin, onAdminClick }) => {
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-20">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <h1 className="text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400">
-          🏆 Sistema de Bolão
+          💰 Bolão do Sebastião
         </h1>
         <button
           onClick={onAdminClick}

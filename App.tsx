@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Participant, FinancialRecord, Pool } from './types';
 import Header from './components/Header';
@@ -187,10 +188,23 @@ const App: React.FC = () => {
 
   const handleCreatePool = () => {
     if (!newPoolName.trim()) return;
+
+    const lastPool = pools.length > 0 ? pools[pools.length - 1] : null;
+
+    const newParticipants: Participant[] = lastPool
+      ? lastPool.participants.map((p, index) => ({
+          name: p.name,
+          phone: p.phone,
+          quotas: p.quotas,
+          status: 'Pendente',
+          id: `p-${new Date().getTime()}-${index}`, // Generate a new unique ID
+      }))
+      : [];
+
     const newPool: Pool = {
       id: new Date().toISOString(),
       name: newPoolName,
-      participants: [],
+      participants: newParticipants,
       financialRecords: []
     };
     const newPools = [...pools, newPool];
