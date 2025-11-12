@@ -8,7 +8,7 @@ import FaqTab from './components/FaqTab';
 import Modal from './components/Modal';
 import Toast from './components/Toast';
 import Footer from './components/Footer';
-import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon, QuestionMarkCircleIcon } from './components/icons';
+import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon, QuestionMarkCircleIcon, ExclamationTriangleIcon } from './components/icons';
 
 type ActiveTab = 'participants' | 'financial' | 'faq';
 
@@ -110,7 +110,24 @@ const App: React.FC = () => {
   const selectedPool = useMemo(() => pools.find(p => p.id === selectedPoolId), [pools, selectedPoolId]);
 
   const handleSaveParticipant = (participantData: Omit<Participant, 'id'>, id?: string) => {
-    if (!selectedPoolId) return;
+    if (!selectedPoolId || !selectedPool) return;
+
+    const cleanPhoneNumber = (phone: string) => (phone || '').replace(/\D/g, '');
+    const newPhoneCleaned = cleanPhoneNumber(participantData.phone);
+
+    if (newPhoneCleaned) {
+      const isDuplicate = selectedPool.participants.some(p => {
+        // When editing, exclude the current participant from the duplicate check
+        if (p.id === id) return false;
+        return cleanPhoneNumber(p.phone) === newPhoneCleaned;
+      });
+
+      if (isDuplicate) {
+        showToast('Este telefone já está cadastrado. Edite o participante existente para adicionar mais cotas.', 'error');
+        return; // Stop execution
+      }
+    }
+
     const newPools = pools.map(pool => {
       if (pool.id === selectedPoolId) {
         const updatedParticipants = id
@@ -132,7 +149,10 @@ const App: React.FC = () => {
       if (pool.id === selectedPoolId) {
         const updatedParticipants = pool.participants.map(p => {
           if (p.id === participantId) {
-            return { ...p, status: p.status === 'Pago' ? 'Pendente' : 'Pago' };
+            // FIX: Explicitly define the type of the new status to prevent type widening to string.
+            const newStatus: 'Pago' | 'Pendente' =
+              p.status === 'Pago' ? 'Pendente' : 'Pago';
+            return { ...p, status: newStatus };
           }
           return p;
         });
@@ -267,6 +287,16 @@ const App: React.FC = () => {
       <Header isAdmin={isAdmin} onAdminClick={handleAdminClick} />
 
       <main className="container mx-auto p-4 sm:p-6 flex-grow">
+        <div className="bg-yellow-50 dark:bg-gray-800 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 rounded-r-lg shadow mb-6" role="alert">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-x-4 gap-y-2">
+            <div className="text-center text-sm text-yellow-800 dark:text-yellow-200 space-y-2 md:space-y-0 md:flex md:items-center md:gap-x-4">
+              <p className="font-medium">Proibido para menores de 18 anos 🔞</p>
+              <p className="hidden md:block text-yellow-600 dark:text-yellow-400" aria-hidden="true">&bull;</p>
+              <p className="font-medium">Importante: Só participe se os R$ 20,00 não forem lhe fazer falta!</p>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full sm:w-auto sm:flex-1">
             <label htmlFor="pool-select" className="sr-only">Selecionar Bolão</label>
