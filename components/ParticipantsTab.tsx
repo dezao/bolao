@@ -83,7 +83,7 @@ const ParticipantForm: React.FC<{
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <UserCircleIcon className="h-5 w-5 text-gray-400" />
             </div>
-            <input id="name" type="text" value={name} onChange={e => setName(e.target.value)} required className={commonInputClasses} placeholder="Nome completo" />
+            <input id="name" type="text" value={name} onChange={e => setName(e.target.value.toUpperCase())} required className={`${commonInputClasses} uppercase`} placeholder="Nome completo" />
           </div>
         </div>
         <div>
@@ -159,16 +159,15 @@ const ParticipantsTab: React.FC<ParticipantsTabProps> = ({ participants, isAdmin
             return p.status === statusFilter;
         })
         .filter(p => {
-            const term = searchTerm.toLowerCase();
-            if (!term) return true;
+            if (!searchTerm) return true;
 
             // Name search part (accent-insensitive)
-            const normalizedName = normalizeString(p.name.toLowerCase());
-            const normalizedTerm = normalizeString(term);
+            const normalizedName = normalizeString(p.name);
+            const normalizedTerm = normalizeString(searchTerm);
             const nameMatch = normalizedName.includes(normalizedTerm);
 
             // Phone search part
-            const termDigits = term.replace(/\D/g, '');
+            const termDigits = searchTerm.replace(/\D/g, '');
             let phoneMatch = false;
             if (termDigits) { // Only search phone if search term has digits
                 const phoneDigits = (p.phone || '').replace(/\D/g, '');
@@ -216,8 +215,8 @@ const ParticipantsTab: React.FC<ParticipantsTabProps> = ({ participants, isAdmin
                       type="text"
                       placeholder="Buscar por nome ou telefone..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="block w-full pl-10 p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500"
+                      onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                      className="block w-full pl-10 p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:ring-primary-500 focus:border-primary-500 uppercase"
                   />
               </div>
               <div className="flex items-center space-x-2 flex-shrink-0">

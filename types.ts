@@ -24,4 +24,5 @@ export interface Pool {
   quotaValue: number;
   participants: Participant[];
   financialRecords: FinancialRecord[];
+  status: 'Em andamento' | 'Encerrado';
 }

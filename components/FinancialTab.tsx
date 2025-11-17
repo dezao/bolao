@@ -76,7 +76,7 @@ const AddFinancialRecordForm: React.FC<AddFinancialRecordFormProps> = ({ onAdd }
                     <label htmlFor="record-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição (Opcional)</label>
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><PencilIcon className="h-5 w-5 text-gray-400" /></div>
-                        <input id="record-description" type="text" value={description} onChange={e => setDescription(e.target.value)} className={commonInputClasses} placeholder="Ex: Aposta na Mega-Sena" />
+                        <input id="record-description" type="text" value={description} onChange={e => setDescription(e.target.value.toUpperCase())} className={`${commonInputClasses} uppercase`} placeholder="Ex: Aposta na Mega-Sena" />
                     </div>
                 </div>
                 <div className="flex justify-end">
