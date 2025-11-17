@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { FinancialRecord, FinancialRecordType } from '../types';
-import { TrashIcon, CalendarIcon, CurrencyDollarIcon, TagIcon } from './icons';
+import { TrashIcon, CalendarIcon, CurrencyDollarIcon, TagIcon, PencilIcon } from './icons';
 
 // Props for the main component
 interface FinancialTabProps {
@@ -21,15 +21,17 @@ const AddFinancialRecordForm: React.FC<AddFinancialRecordFormProps> = ({ onAdd }
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [type, setType] = useState<FinancialRecordType>('Aposta');
     const [amount, setAmount] = useState('');
+    const [description, setDescription] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (date && type && amount) {
-            onAdd({ date, type, amount: parseFloat(amount) });
+            onAdd({ date, type, amount: parseFloat(amount), description });
             // Reset form
             setDate(new Date().toISOString().split('T')[0]);
             setType('Aposta');
             setAmount('');
+            setDescription('');
         }
     };
 
@@ -68,6 +70,13 @@ const AddFinancialRecordForm: React.FC<AddFinancialRecordFormProps> = ({ onAdd }
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CurrencyDollarIcon className="h-5 w-5 text-gray-400" /></div>
                             <input id="record-amount" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} required className={commonInputClasses} placeholder="0.00" />
                         </div>
+                    </div>
+                </div>
+                 <div>
+                    <label htmlFor="record-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição (Opcional)</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><PencilIcon className="h-5 w-5 text-gray-400" /></div>
+                        <input id="record-description" type="text" value={description} onChange={e => setDescription(e.target.value)} className={commonInputClasses} placeholder="Ex: Aposta na Mega-Sena" />
                     </div>
                 </div>
                 <div className="flex justify-end">
@@ -129,6 +138,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({ records, isAdmin, onAdd, on
                             <tr>
                                 <th scope="col" className="px-4 py-3">Data</th>
                                 <th scope="col" className="px-4 py-3">Tipo</th>
+                                <th scope="col" className="px-4 py-3">Descrição</th>
                                 <th scope="col" className="px-4 py-3 text-right">Valor</th>
                                 {isAdmin && <th scope="col" className="px-4 py-3 text-right">Ações</th>}
                             </tr>
@@ -146,6 +156,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({ records, isAdmin, onAdd, on
                                             {r.type}
                                         </span>
                                     </td>
+                                    <td className="px-4 py-3">{r.description || '-'}</td>
                                     <td className={`px-4 py-3 text-right font-medium ${r.type === 'Premiação' ? 'text-green-500' : 'text-red-500'}`}>
                                         {r.type === 'Premiação' ? `+ ${formatCurrency(r.amount)}` : `- ${formatCurrency(r.amount)}`}
                                     </td>
@@ -158,7 +169,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({ records, isAdmin, onAdd, on
                             ))}
                             {records.length === 0 && (
                                 <tr>
-                                    <td colSpan={isAdmin ? 4 : 3} className="text-center py-4">Nenhum registro financeiro encontrado.</td>
+                                    <td colSpan={isAdmin ? 5 : 4} className="text-center py-4">Nenhum registro financeiro encontrado.</td>
                                 </tr>
                             )}
                         </tbody>

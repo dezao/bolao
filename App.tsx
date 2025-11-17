@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Participant, FinancialRecord, Pool } from './types';
 import Header from './components/Header';
@@ -8,7 +9,7 @@ import FaqTab from './components/FaqTab';
 import Modal from './components/Modal';
 import Toast from './components/Toast';
 import Footer from './components/Footer';
-import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon, QuestionMarkCircleIcon, ExclamationTriangleIcon } from './components/icons';
+import { UserCircleIcon, ChartBarIcon, LockClosedIcon, EyeIcon, EyeSlashIcon, PlusCircleIcon, CollectionIcon, TagIcon, QuestionMarkCircleIcon, ExclamationTriangleIcon, CalendarIcon, CurrencyDollarIcon, PencilIcon, TrashIcon, DocumentTextIcon } from './components/icons';
 
 type ActiveTab = 'participants' | 'financial' | 'faq';
 
@@ -31,11 +32,24 @@ const App: React.FC = () => {
   
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
   
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteItemModal, setShowDeleteItemModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{id: string; type: 'participant' | 'financial'} | null>(null);
 
   const [showCreatePoolModal, setShowCreatePoolModal] = useState(false);
   const [newPoolName, setNewPoolName] = useState('');
+  const [newPoolStartDate, setNewPoolStartDate] = useState('');
+  const [newPoolEndDate, setNewPoolEndDate] = useState('');
+  const [newPoolQuotaValue, setNewPoolQuotaValue] = useState('20');
+
+  const [showEditPoolModal, setShowEditPoolModal] = useState(false);
+  const [editingPool, setEditingPool] = useState<Pool | null>(null);
+  const [editPoolName, setEditPoolName] = useState('');
+  const [editPoolStartDate, setEditPoolStartDate] = useState('');
+  const [editPoolEndDate, setEditPoolEndDate] = useState('');
+  const [editPoolQuotaValue, setEditPoolQuotaValue] = useState('');
+
+  const [showDeletePoolConfirmModal, setShowDeletePoolConfirmModal] = useState(false);
+  const [poolToDeleteId, setPoolToDeleteId] = useState<string | null>(null);
 
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
@@ -180,12 +194,12 @@ const App: React.FC = () => {
     showToast('Registro financeiro adicionado!', 'success');
   };
 
-  const confirmDelete = (id: string, type: 'participant' | 'financial') => {
+  const confirmDeleteItem = (id: string, type: 'participant' | 'financial') => {
     setItemToDelete({ id, type });
-    setShowDeleteModal(true);
+    setShowDeleteItemModal(true);
   };
 
-  const handleDeleteConfirmed = () => {
+  const handleDeleteItemConfirmed = () => {
     if (!itemToDelete || !selectedPoolId) return;
     const { id, type } = itemToDelete;
     const newPools = pools.map(pool => {
@@ -202,12 +216,15 @@ const App: React.FC = () => {
     setPools(newPools);
     updateRemoteData(newPools);
     showToast('Item excluído com sucesso.', 'success');
-    setShowDeleteModal(false);
+    setShowDeleteItemModal(false);
     setItemToDelete(null);
   };
 
   const handleCreatePool = () => {
-    if (!newPoolName.trim()) return;
+    if (!newPoolName.trim() || !newPoolStartDate || !newPoolEndDate || !newPoolQuotaValue) {
+        showToast('Preencha todos os campos para criar o bolão.', 'error');
+        return;
+    }
 
     const lastPool = pools.length > 0 ? pools[pools.length - 1] : null;
 
@@ -224,6 +241,9 @@ const App: React.FC = () => {
     const newPool: Pool = {
       id: new Date().toISOString(),
       name: newPoolName,
+      startDate: newPoolStartDate,
+      endDate: newPoolEndDate,
+      quotaValue: parseFloat(newPoolQuotaValue),
       participants: newParticipants,
       financialRecords: []
     };
@@ -233,16 +253,162 @@ const App: React.FC = () => {
     updateRemoteData(newPools);
     setShowCreatePoolModal(false);
     setNewPoolName('');
+    setNewPoolStartDate('');
+    setNewPoolEndDate('');
+    setNewPoolQuotaValue('20');
     showToast('Novo bolão criado com sucesso!', 'success');
     setActiveTab('participants');
   };
 
+  const handleOpenEditPoolModal = () => {
+    if (!selectedPool) return;
+    setEditingPool(selectedPool);
+    setEditPoolName(selectedPool.name);
+    setEditPoolStartDate(selectedPool.startDate);
+    setEditPoolEndDate(selectedPool.endDate);
+    setEditPoolQuotaValue(String(selectedPool.quotaValue));
+    setShowEditPoolModal(true);
+  };
+
+  const handleUpdatePool = () => {
+    if (!editingPool) return;
+    if (!editPoolName.trim() || !editPoolStartDate || !editPoolEndDate || !editPoolQuotaValue) {
+        showToast('Preencha todos os campos para editar o bolão.', 'error');
+        return;
+    }
+    const updatedPool: Pool = {
+        ...editingPool,
+        name: editPoolName,
+        startDate: editPoolStartDate,
+        endDate: editPoolEndDate,
+        quotaValue: parseFloat(editPoolQuotaValue),
+    };
+    const newPools = pools.map(p => p.id === editingPool.id ? updatedPool : p);
+    setPools(newPools);
+    updateRemoteData(newPools);
+    setShowEditPoolModal(false);
+    setEditingPool(null);
+    showToast('Bolão atualizado com sucesso!', 'success');
+  };
+  
+  const handleOpenDeletePoolModal = () => {
+    if (!selectedPoolId) return;
+    setPoolToDeleteId(selectedPoolId);
+    setShowDeletePoolConfirmModal(true);
+  };
+
+  const handleDeletePoolConfirmed = () => {
+    if (!poolToDeleteId) return;
+    const newPools = pools.filter(p => p.id !== poolToDeleteId);
+    setPools(newPools);
+    updateRemoteData(newPools);
+
+    if (newPools.length > 0) {
+        setSelectedPoolId(newPools[0].id);
+    } else {
+        setSelectedPoolId(null);
+        setActiveTab('faq');
+    }
+
+    setShowDeletePoolConfirmModal(false);
+    setPoolToDeleteId(null);
+    showToast('Bolão excluído com sucesso.', 'success');
+  };
+
   const valorArrecadado = useMemo(() => {
     if (!selectedPool) return 0;
+    const quotaValue = selectedPool.quotaValue || 20; // Fallback para dados antigos
     return selectedPool.participants
       .filter(p => p.status === 'Pago')
-      .reduce((sum, p) => sum + p.quotas * 20, 0);
+      .reduce((sum, p) => sum + p.quotas * quotaValue, 0);
   }, [selectedPool]);
+
+  const handleGeneratePdfReport = () => {
+    if (!selectedPool) {
+      showToast('Selecione um bolão para gerar o relatório.', 'error');
+      return;
+    }
+    
+    const { jsPDF } = (window as any).jspdf;
+    const doc = new jsPDF();
+    
+    // --- Title ---
+    doc.setFontSize(18);
+    doc.setTextColor('#0D9488');
+    doc.text(`Relatório do Bolão: ${selectedPool.name}`, 14, 22);
+
+    // --- Summary ---
+    doc.setFontSize(12);
+    doc.setTextColor('#111827');
+    doc.text('Resumo Geral', 14, 38);
+    
+    const totalApostas = selectedPool.financialRecords.filter(r => r.type === 'Aposta').reduce((sum, r) => sum + r.amount, 0);
+    const totalPremiacoes = selectedPool.financialRecords.filter(r => r.type === 'Premiação').reduce((sum, r) => sum + r.amount, 0);
+    const saldo = valorArrecadado - totalApostas + totalPremiacoes;
+
+    const summaryData = [
+      ['Período', `${selectedPool.startDate ? new Date(selectedPool.startDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A'} a ${selectedPool.endDate ? new Date(selectedPool.endDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A'}`],
+      ['Valor da Cota', (selectedPool.quotaValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })],
+      ['Total Arrecadado (Pago)', valorArrecadado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })],
+      ['Total de Apostas (Saídas)', `- ${totalApostas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`],
+      ['Total de Premiações (Ganhos)', `+ ${totalPremiacoes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`],
+      ['Saldo Final', saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })],
+    ];
+
+    (doc as any).autoTable({
+        startY: 42,
+        head: [['Item', 'Valor']],
+        body: summaryData,
+        theme: 'grid',
+        headStyles: { fillColor: [13, 148, 136] }, // primary-600
+    });
+
+    let lastY = (doc as any).lastAutoTable.finalY + 15;
+
+    // --- Financial Records Table ---
+    if (selectedPool.financialRecords.length > 0) {
+        doc.setFontSize(12);
+        doc.text('Histórico Financeiro', 14, lastY);
+
+        const financialBody = selectedPool.financialRecords
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(r => [
+                new Date(r.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
+                r.type,
+                r.description || '-',
+                (r.type === 'Premiação' ? '+ ' : '- ') + r.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            ]);
+
+        (doc as any).autoTable({
+            startY: lastY + 4,
+            head: [['Data', 'Tipo', 'Descrição', 'Valor']],
+            body: financialBody,
+            theme: 'striped',
+            headStyles: { fillColor: [13, 148, 136] },
+        });
+        lastY = (doc as any).lastAutoTable.finalY + 15;
+    }
+    
+    // --- Participants Table ---
+    doc.setFontSize(12);
+    doc.text('Lista de Participantes', 14, lastY);
+    
+    const participantBody = selectedPool.participants
+        .sort((a,b) => a.name.localeCompare(b.name))
+        .map(p => [p.name, p.phone, p.quotas.toString(), p.status]);
+
+    (doc as any).autoTable({
+        startY: lastY + 4,
+        head: [['Nome', 'Telefone', 'Cotas', 'Status']],
+        body: participantBody,
+        theme: 'striped',
+        headStyles: { fillColor: [13, 148, 136] },
+    });
+    
+    // --- Save the PDF ---
+    doc.save(`Relatorio_Bolao_${selectedPool.name.replace(/\W/g, '_')}.pdf`);
+    showToast('Relatório PDF gerado com sucesso!', 'success');
+  };
 
   const renderContent = () => {
     if (activeTab === 'faq') {
@@ -266,7 +432,7 @@ const App: React.FC = () => {
         participants={selectedPool.participants}
         isAdmin={isAdmin}
         onSave={handleSaveParticipant}
-        onDelete={(id) => confirmDelete(id, 'participant')}
+        onDelete={(id) => confirmDeleteItem(id, 'participant')}
         editingParticipant={editingParticipant}
         setEditingParticipant={setEditingParticipant}
         onToggleStatus={handleToggleParticipantStatus}
@@ -276,7 +442,7 @@ const App: React.FC = () => {
         records={selectedPool.financialRecords}
         isAdmin={isAdmin}
         onAdd={handleAddFinancialRecord}
-        onDelete={(id) => confirmDelete(id, 'financial')}
+        onDelete={(id) => confirmDeleteItem(id, 'financial')}
         valorArrecadado={valorArrecadado}
       />
     );
@@ -292,7 +458,7 @@ const App: React.FC = () => {
             <div className="text-center text-sm text-yellow-800 dark:text-yellow-200 space-y-2 md:space-y-0 md:flex md:items-center md:gap-x-4">
               <p className="font-medium">Proibido para menores de 18 anos 🔞</p>
               <p className="hidden md:block text-yellow-600 dark:text-yellow-400" aria-hidden="true">&bull;</p>
-              <p className="font-medium">Importante: Só participe se os R$ 20,00 não forem lhe fazer falta!</p>
+              <p className="font-medium">Importante: Só participe se os {(selectedPool?.quotaValue || 20).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} não forem lhe fazer falta!</p>
             </div>
           </div>
         </div>
@@ -324,15 +490,64 @@ const App: React.FC = () => {
             </div>
           </div>
           {isAdmin && (
-            <button
-              onClick={() => setShowCreatePoolModal(true)}
-              className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 transition-colors"
-            >
-              <PlusCircleIcon className="w-5 h-5" />
-              <span>Criar Novo Bolão</span>
-            </button>
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+                <button
+                    onClick={handleGeneratePdfReport}
+                    disabled={!selectedPoolId}
+                    className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-500 text-white font-semibold rounded-md hover:bg-purple-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    <DocumentTextIcon className="w-5 h-5" />
+                    <span>Relatório</span>
+                </button>
+                <button
+                    onClick={handleOpenEditPoolModal}
+                    disabled={!selectedPoolId}
+                    className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    <PencilIcon className="w-5 h-5" />
+                    <span>Editar</span>
+                </button>
+                <button
+                    onClick={handleOpenDeletePoolModal}
+                    disabled={!selectedPoolId}
+                    className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    <TrashIcon className="w-5 h-5" />
+                    <span>Excluir</span>
+                </button>
+                <button
+                  onClick={() => setShowCreatePoolModal(true)}
+                  className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 transition-colors"
+                >
+                  <PlusCircleIcon className="w-5 h-5" />
+                  <span>Criar Novo</span>
+                </button>
+            </div>
           )}
         </div>
+        
+        {selectedPool && (
+            <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Data de Início</h4>
+                    <p className="text-md font-bold text-primary-600 dark:text-primary-400">{selectedPool.startDate ? new Date(selectedPool.startDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A'}</p>
+                </div>
+                <div>
+                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Data de Término</h4>
+                    <p className="text-md font-bold text-primary-600 dark:text-primary-400">{selectedPool.endDate ? new Date(selectedPool.endDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A'}</p>
+                </div>
+                <div>
+                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Valor da Cota</h4>
+                    <p className="text-md font-bold text-primary-600 dark:text-primary-400">
+                        {(selectedPool.quotaValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                </div>
+                 <div>
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400">Arrecadado (Pago)</h4>
+                    <p className="text-md font-bold text-green-600">{valorArrecadado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
+            </div>
+        )}
 
         <div className="mb-6">
             <div className="flex border-b border-gray-200 dark:border-gray-700">
@@ -413,34 +628,98 @@ const App: React.FC = () => {
               <div>
                   <label htmlFor="pool-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do Bolão</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <TagIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                        id="pool-name"
-                        type="text"
-                        value={newPoolName}
-                        onChange={(e) => setNewPoolName(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleCreatePool()}
-                        className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Ex: Agosto/2024"
-                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><TagIcon className="h-5 w-5 text-gray-400" /></div>
+                    <input id="pool-name" type="text" value={newPoolName} onChange={(e) => setNewPoolName(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" placeholder="Ex: Agosto/2024" required />
                   </div>
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Início</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CalendarIcon className="h-5 w-5 text-gray-400" /></div>
+                      <input id="start-date" type="date" value={newPoolStartDate} onChange={(e) => setNewPoolStartDate(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" required />
+                    </div>
+                </div>
+                <div>
+                    <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Término</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CalendarIcon className="h-5 w-5 text-gray-400" /></div>
+                      <input id="end-date" type="date" value={newPoolEndDate} onChange={(e) => setNewPoolEndDate(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" required />
+                    </div>
+                </div>
+              </div>
+              <div>
+                  <label htmlFor="quota-value" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor da Cota (R$)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CurrencyDollarIcon className="h-5 w-5 text-gray-400" /></div>
+                    <input id="quota-value" type="number" step="0.01" min="0" value={newPoolQuotaValue} onChange={(e) => setNewPoolQuotaValue(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" placeholder="20.00" required />
+                  </div>
+              </div>
+              <div className="flex justify-end space-x-2 pt-2">
                   <button onClick={() => setShowCreatePoolModal(false)} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400">Cancelar</button>
                   <button onClick={handleCreatePool} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Criar</button>
               </div>
           </div>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Confirmar Exclusão">
+      {/* Edit Pool Modal */}
+      <Modal isOpen={showEditPoolModal} onClose={() => setShowEditPoolModal(false)} title="Editar Bolão">
+        <div className="space-y-4">
+            <div>
+                <label htmlFor="edit-pool-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome do Bolão</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><TagIcon className="h-5 w-5 text-gray-400" /></div>
+                    <input id="edit-pool-name" type="text" value={editPoolName} onChange={(e) => setEditPoolName(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" placeholder="Ex: Agosto/2024" required />
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="edit-start-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Início</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CalendarIcon className="h-5 w-5 text-gray-400" /></div>
+                        <input id="edit-start-date" type="date" value={editPoolStartDate} onChange={(e) => setEditPoolStartDate(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" required />
+                    </div>
+                </div>
+                <div>
+                    <label htmlFor="edit-end-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data de Término</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CalendarIcon className="h-5 w-5 text-gray-400" /></div>
+                        <input id="edit-end-date" type="date" value={editPoolEndDate} onChange={(e) => setEditPoolEndDate(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" required />
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label htmlFor="edit-quota-value" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor da Cota (R$)</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><CurrencyDollarIcon className="h-5 w-5 text-gray-400" /></div>
+                    <input id="edit-quota-value" type="number" step="0.01" min="0" value={editPoolQuotaValue} onChange={(e) => setEditPoolQuotaValue(e.target.value)} className="w-full pl-10 p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-primary-500 focus:border-primary-500" placeholder="20.00" required />
+                </div>
+            </div>
+            <div className="flex justify-end space-x-2 pt-2">
+                <button onClick={() => setShowEditPoolModal(false)} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400">Cancelar</button>
+                <button onClick={handleUpdatePool} className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Salvar Alterações</button>
+            </div>
+        </div>
+    </Modal>
+
+    {/* Delete Pool Confirmation Modal */}
+    <Modal isOpen={showDeletePoolConfirmModal} onClose={() => setShowDeletePoolConfirmModal(false)} title="Confirmar Exclusão do Bolão">
+        <div className="space-y-4">
+            <p>Você tem certeza que deseja excluir este bolão? <strong>Todos os participantes e registros financeiros associados serão perdidos.</strong> Esta ação não pode ser desfeita.</p>
+            <div className="flex justify-end space-x-2">
+                <button onClick={() => setShowDeletePoolConfirmModal(false)} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400">Cancelar</button>
+                <button onClick={handleDeletePoolConfirmed} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Excluir Bolão</button>
+            </div>
+        </div>
+    </Modal>
+
+      {/* Delete Item Confirmation Modal */}
+      <Modal isOpen={showDeleteItemModal} onClose={() => setShowDeleteItemModal(false)} title="Confirmar Exclusão">
         <div className="space-y-4">
             <p>Você tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.</p>
             <div className="flex justify-end space-x-2">
-                <button onClick={() => setShowDeleteModal(false)} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400">Cancelar</button>
-                <button onClick={handleDeleteConfirmed} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Excluir</button>
+                <button onClick={() => setShowDeleteItemModal(false)} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400">Cancelar</button>
+                <button onClick={handleDeleteItemConfirmed} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Excluir</button>
             </div>
         </div>
       </Modal>

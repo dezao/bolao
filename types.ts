@@ -13,11 +13,15 @@ export interface FinancialRecord {
   date: string; 
   type: FinancialRecordType;
   amount: number;
+  description?: string;
 }
 
 export interface Pool {
   id: string;
   name: string;
+  startDate: string;
+  endDate: string;
+  quotaValue: number;
   participants: Participant[];
   financialRecords: FinancialRecord[];
 }
