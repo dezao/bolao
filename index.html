@@ -44,6 +44,30 @@
       .animate-fade-in-up {
         animation: fade-in-up 0.3s ease-out forwards;
       }
+      @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .marquee {
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+      }
+      .marquee-content {
+        display: flex;
+        width: 200%;
+        animation: marquee 30s linear infinite;
+      }
+      .marquee-item {
+        width: 50%;
+        flex-shrink: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem; /* Corresponds to gap-x-4 */
+        white-space: nowrap;
+        padding: 0 2rem; /* Add some padding to prevent text from touching edges on loop */
+      }
     </style>
   <script type="importmap">
 {

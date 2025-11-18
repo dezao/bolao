@@ -522,6 +522,14 @@ const App: React.FC = () => {
     );
   }
 
+  const MarqueeText = () => (
+    <div className="marquee-item text-sm text-yellow-800 dark:text-yellow-200">
+        <p className="font-medium">Proibido para menores de 18 anos 🔞</p>
+        <p className="text-yellow-600 dark:text-yellow-400" aria-hidden="true">&bull;</p>
+        <p className="font-medium">Importante: Só participe se os {(selectedPool?.quotaValue || 20).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} não forem lhe fazer falta!</p>
+    </div>
+  );
+
   return (
     <div className="min-h-screen text-gray-800 dark:text-gray-200 flex flex-col">
       <Header isAdmin={isAdmin} onAdminClick={handleAdminClick} />
@@ -600,14 +608,13 @@ const App: React.FC = () => {
             
             {selectedPool ? (
               <>
-                <div className="bg-yellow-50 dark:bg-gray-800 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 rounded-r-lg shadow mb-6" role="alert">
-                  <div className="flex flex-col md:flex-row items-center justify-center gap-x-4 gap-y-2">
-                    <div className="text-center text-sm text-yellow-800 dark:text-yellow-200 space-y-2 md:space-y-0 md:flex md:items-center md:gap-x-4">
-                      <p className="font-medium">Proibido para menores de 18 anos 🔞</p>
-                      <p className="hidden md:block text-yellow-600 dark:text-yellow-400" aria-hidden="true">&bull;</p>
-                      <p className="font-medium">Importante: Só participe se os {(selectedPool?.quotaValue || 20).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} não forem lhe fazer falta!</p>
+                <div className="marquee bg-yellow-50 dark:bg-gray-800 border-y border-yellow-400 dark:border-yellow-500 py-3 shadow mb-6" role="alert">
+                    <div className="marquee-content">
+                        <MarqueeText />
+                        <div aria-hidden="true">
+                            <MarqueeText />
+                        </div>
                     </div>
-                  </div>
                 </div>
                 
                 <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
